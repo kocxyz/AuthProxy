@@ -33,7 +33,7 @@ app.use(async (req, res, next) => {
         return res.status(401).send("Invalid credentials");
     }
 
-    let response = await axios.post('http://localhost:8000/auth/reauth', {
+    let response = await axios.post('https://api.kocity.xyz/auth/reauth', {
         username: credentials[0],
         authToken: credentials[1],
     }).catch((err) => {
