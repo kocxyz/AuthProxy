@@ -3,7 +3,7 @@ const express = require('express');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const config = require('./config.json');
 
-if(config.name == "ServerName") console.log("Please change the name in config.json") && process.exit(1);
+if(config.name == "ServerName") console.log("Please change the name in config.json");
 
 const app = express();
 
