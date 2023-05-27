@@ -1,6 +1,6 @@
 {
-    "name": "test",
-    "maxPlayers": 1,
+    "name": "ServerName",
+    "maxPlayers": 50,
     "external": {
         "port": 23600
     },

@@ -1,27 +1,13 @@
 const axios = require('axios')
 const express = require('express');
 const { createProxyMiddleware } = require('http-proxy-middleware');
+const config = require('./config.json');
+
+if(config.name == "ServerName") console.log("Please change the name in config.json") && process.exit(1);
 
 const app = express();
 
-const config = require('./config.json');
-
 app.use(express.json());
-
-app.get('/stats/status', async (req, res) => {
-    res.send({
-        status: "OK",
-        version: require('./package.json').version,
-        uptime: process.uptime(),
-        connections: await new Promise((resolve, reject) => {
-            server.getConnections((err, connections) => {
-                if(err) return reject(err);
-                resolve(connections-1);
-            });
-        }),
-        maxConnections: config.maxPlayers,
-    });
-});
 
 app.use(async (req, res, next) => {
     console.log("-------------------------proxyReq-------------------------");
@@ -33,7 +19,9 @@ app.use(async (req, res, next) => {
         return res.status(401).send("Invalid credentials");
     }
 
-    let response = await axios.post('http://localhost:8000/auth/reauth', {
+    console.log(`Proxy request to ${req.url} from ${credentials[0]}`);
+
+    let response = await axios.post('https://api.kocity.xyz/auth/reauth', {
         username: credentials[0],
         authToken: credentials[1],
     }).catch((err) => {
@@ -48,6 +36,8 @@ app.use(async (req, res, next) => {
         return res.status(401).send("Unauthorized");
     }
 
+    console.log(`Proxying request from ${response.data.username} granted`);
+
     req.body.credentials.username = response.data.username;
 
     req.headers['content-length'] = Buffer.byteLength(JSON.stringify(req.body));
@@ -56,8 +46,27 @@ app.use(async (req, res, next) => {
     console.log("-------------------------done-------------------------");
   })
 
+app.get('/stats/status', async (req, res) => {
+    console.log("-------------------------status-------------------------");
+    console.log(`Status requested by ${req.ip}`);
+
+    res.send({
+        status: "OK",
+        version: require('./package.json').version,
+        uptime: process.uptime(),
+        connections: await new Promise((resolve, reject) => {
+            server.getConnections((err, connections) => {
+                if(err) return reject(err);
+                resolve(connections-1);
+            });
+        }),
+        maxConnections: config.maxPlayers,
+    });
+    console.log("-------------------------done-------------------------");
+});
+
 const proxy = createProxyMiddleware({
-    target: 'http://127.0.0.1:23500',
+    target: `http://127.0.0.1:${config.internal.port}`,
     changeOrigin: true,
     ws: true,
     onProxyReq: (proxyReq, req, res, options) => {
@@ -68,7 +77,9 @@ const proxy = createProxyMiddleware({
 
 app.all('*', proxy)
 
-const server = app.listen(23600);
+const server = app.listen(config.external.port, () => {
+    console.log(`Proxy listening on port ${config.external.port}`);
+});
 
 
 process.on('uncaughtException', function (err) {
@@ -78,7 +89,3 @@ process.on('uncaughtException', function (err) {
 process.on('unhandledRejection', function (err) {
     console.log(err);
 });
-
-(async () => {
-    let version = await axios.get('https://raw.githubusercontent.com/5zig/The-5zig-API/master/versions.json')
-})();
