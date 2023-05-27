@@ -9,8 +9,32 @@ const app = express();
 
 app.use(express.json());
 
+app.get('/stats/status', async (req, res) => {
+    console.log("-------------------------status-------------------------");
+    console.log(`Status requested by ${req.ip}`);
+
+    res.send({
+        status: "OK",
+        version: require('./package.json').version,
+        uptime: process.uptime(),
+        connections: await new Promise((resolve, reject) => {
+            server.getConnections((err, connections) => {
+                if(err) return reject(err);
+                resolve(connections-1);
+            });
+        }),
+        maxConnections: config.maxPlayers,
+    });
+    console.log("-------------------------done-------------------------");
+});
+
 app.use(async (req, res, next) => {
     console.log("-------------------------proxyReq-------------------------");
+
+    if(!req.body.credentials) {
+        console.log("No credentials");
+        return next();
+    }
 
     const credentials = req.body.credentials.username.split("/")
 
@@ -45,25 +69,6 @@ app.use(async (req, res, next) => {
     next();
     console.log("-------------------------done-------------------------");
   })
-
-app.get('/stats/status', async (req, res) => {
-    console.log("-------------------------status-------------------------");
-    console.log(`Status requested by ${req.ip}`);
-
-    res.send({
-        status: "OK",
-        version: require('./package.json').version,
-        uptime: process.uptime(),
-        connections: await new Promise((resolve, reject) => {
-            server.getConnections((err, connections) => {
-                if(err) return reject(err);
-                resolve(connections-1);
-            });
-        }),
-        maxConnections: config.maxPlayers,
-    });
-    console.log("-------------------------done-------------------------");
-});
 
 const proxy = createProxyMiddleware({
     target: `http://127.0.0.1:${config.internal.port}`,
