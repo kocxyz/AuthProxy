@@ -19,11 +19,8 @@ app.use(async (req, res, next) => {
         return res.status(401).send("Invalid credentials");
     }
 
-<<<<<<< HEAD
     console.log(`Proxy request to ${req.url} from ${credentials[0]}`);
 
-=======
->>>>>>> 97a2949fc6998c87e6c33a7a3af8f341e97cefa2
     let response = await axios.post('https://api.kocity.xyz/auth/reauth', {
         username: credentials[0],
         authToken: credentials[1],
@@ -91,12 +88,4 @@ process.on('uncaughtException', function (err) {
 
 process.on('unhandledRejection', function (err) {
     console.log(err);
-<<<<<<< HEAD
 });
-=======
-});
-
-(async () => {
-    let version = await axios.get('https://raw.githubusercontent.com/5zig/The-5zig-API/master/versions.json')
-})();
->>>>>>> 97a2949fc6998c87e6c33a7a3af8f341e97cefa2
