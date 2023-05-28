@@ -46,7 +46,7 @@ app.use(async (req, res, next) => {
 
     console.log(`Proxy request to ${req.url}`);
 
-    let response = await axios.post('http://localhost:23501/auth/validate', {
+    let response = await axios.post('https://api.kocity.xyz/auth/validate', {
         authkey,
         server: config.publicAddr
     }).catch((err) => {
