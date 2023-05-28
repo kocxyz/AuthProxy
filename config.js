@@ -10,6 +10,7 @@ module.exports = {
     port: process.env.EXTERNAL_PORT || config.external.port,
   },
   internal: {
+    host: process.env.INTERNAL_HOST || config.internal.host,
     port: process.env.INTERNAL_PORT || config.internal.port,
   },
 };

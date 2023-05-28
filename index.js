@@ -74,7 +74,7 @@ app.use(async (req, res, next) => {
   })
 
 const proxy = createProxyMiddleware({
-    target: `http://127.0.0.1:${config.internal.port}`,
+    target: `http://${config.internal.host}:${config.internal.port}`,
     changeOrigin: true,
     ws: true,
     onProxyReq: (proxyReq, req, res, options) => {
