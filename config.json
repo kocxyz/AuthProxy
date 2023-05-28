@@ -1,5 +1,6 @@
 {
     "name": "ServerName",
+    "publicAddr": "127.0.0.1:23600",
     "maxPlayers": 50,
     "external": {
         "port": 23600

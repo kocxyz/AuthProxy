@@ -30,26 +30,29 @@ app.get('/stats/status', async (req, res) => {
 
 app.use(async (req, res, next) => {
     console.log("-------------------------proxyReq-------------------------");
+    res.set('X-Powered-By', 'KoCity Proxy');
 
     if(!req.body.credentials) {
         console.log("No credentials");
         return next();
     }
 
-    const credentials = req.body.credentials.username.split("/")
+    const authkey = req.body.credentials.username
 
-    if(credentials.length != 2) {
+    if(!authkey) {
         console.log("Invalid credentials");
         return res.status(401).send("Invalid credentials");
     }
 
-    console.log(`Proxy request to ${req.url} from ${credentials[0]}`);
+    console.log(`Proxy request to ${req.url}`);
 
-    let response = await axios.post('https://api.kocity.xyz/auth/reauth', {
-        username: credentials[0],
-        authToken: credentials[1],
+    let response = await axios.post('http://localhost:23501/auth/validate', {
+        authkey,
+        server: config.publicAddr
     }).catch((err) => {
         res.status(401).send("Unauthorized");
+        if(err.response) console.log(err.response.data);
+        else console.log(err);
         return "Unauthorized";
     });
 
