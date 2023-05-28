@@ -1,9 +1,9 @@
 const axios = require('axios')
 const express = require('express');
 const { createProxyMiddleware } = require('http-proxy-middleware');
-const config = require('./config.json');
+const config = require('./config');
 
-if(config.name == "ServerName") console.log("Please change the name in config.json");
+if(config.name == "ServerName") console.log("Please change the name in config.json or via the environment (SERVER_NAME)");
 
 const app = express();
 
