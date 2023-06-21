@@ -1,10 +1,12 @@
 const axios = require('axios')
 const express = require('express');
 const { createProxyMiddleware } = require('http-proxy-middleware');
-const config = require('./config.json');
+const config = require('./config');
 const chalk = require('chalk');
 const fs = require('fs');
 const os = require('os');
+
+if(!fs.existsSync("./logs")) fs.mkdirSync("./logs");
 
 // log that individual logs
 console.log(chalk.cyan(` ___  __     ________   ________   ___   _________     ___    ___    ___    ___  ___    ___  ________   `));
@@ -27,9 +29,7 @@ console.log(chalk.blueBright("--------------------------------------------------
 
 require('./logger.js');
 
-if(config.name == "ServerName") console.log.warn("Please change the name in the config.json");
-
-if(!fs.existsSync("./logs")) fs.mkdirSync("./logs");
+if(config.name == "ServerName") console.log.warn("Please change the name in the config.json or via the environment (SERVER_NAME)");
 
 const app = express();
 
@@ -95,7 +95,7 @@ app.use(async (req, res, next) => {
   })
 
 const proxy = createProxyMiddleware({
-    target: `http://127.0.0.1:${config.internal.port}`,
+    target: `http://${config.internal.host}:${config.internal.port}`,
     changeOrigin: true,
     ws: true,
     onProxyReq: (proxyReq, req, res, options) => {

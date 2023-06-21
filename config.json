@@ -6,6 +6,7 @@
         "port": 23600
     },
     "internal": {
+        "host": "localhost",
         "port": 23500
     }
 }
