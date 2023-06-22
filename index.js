@@ -68,7 +68,7 @@ app.use(async (req, res, next) => {
         return res.status(401).send("Invalid credentials");
     }
 
-    let response = await axios.post('http://localhost:23501/auth/validate', {
+    let response = await axios.post('https://api.kocity.xyz/auth/validate', {
         authkey,
         server: config.publicAddr
     }).catch((err) => {
