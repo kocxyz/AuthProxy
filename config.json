@@ -1,5 +1,6 @@
 {
     "name": "ServerName",
+    "authServer": "https://api.kocity.xyz",
     "publicAddr": "127.0.0.1:23600",
     "maxPlayers": 50,
     "external": {
