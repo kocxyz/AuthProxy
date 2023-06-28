@@ -52,7 +52,7 @@ app.use(async (req: express.Request, res: express.Response, next: express.NextFu
         return res.status(401).send("Invalid credentials");
     }
 
-    let response: null | authResponse = await axios.post(`${config.authServer}/auth/validate`, {
+    const response: null | authResponse = await axios.post(`${config.authServer}/auth/validate`, {
         authkey,
         server: config.publicAddr
     }).catch((err: authError): null => {
