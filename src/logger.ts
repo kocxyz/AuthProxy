@@ -3,10 +3,32 @@ import chalk from 'chalk';
 import fs from 'fs';
 import os from 'os';
 
+if(!fs.existsSync("./logs")) fs.mkdirSync("./logs");
 const logName = `./logs/log-${new Date().toLocaleDateString().replace(/\//g, "-")}.txt`;
 const log = fs.createWriteStream(logName, { flags: 'a' });
 
 export default class Log {
+    constructor() {
+        // The logo printed to the console. Double backslashes are used to escape the backslashes in the string. Thats why it looks so weird here.
+        console.log(chalk.cyan(` ___  __     ________   ________   ___   _________     ___    ___    ___    ___  ___    ___  ________   `));
+        console.log(chalk.cyan(`|\\  \\|\\  \\  |\\   __  \\ |\\   ____\\ |\\  \\ |\\___   ___\\  |\\  \\  /  /|  |\\  \\  /  /||\\  \\  /  /||\\_____  \\  `));
+        console.log(chalk.cyan(`\\ \\  \\/  /|_\\ \\  \\|\\  \\\\ \\  \\___| \\ \\  \\\\|___ \\  \\_|  \\ \\  \\/  / /  \\ \\  \\/  / /\\ \\  \\/  / / \\|___/  /| `));
+        console.log(chalk.cyan(` \\ \\   ___  \\\\ \\  \\\\\\  \\\\ \\  \\     \\ \\  \\    \\ \\  \\    \\ \\    / /    \\ \\    / /  \\ \\    / /      /  / / `));
+        console.log(chalk.cyan(`  \\ \\  \\\\ \\  \\\\ \\  \\\\\\  \\\\ \\  \\____ \\ \\  \\    \\ \\  \\    \\/  /  /___   /     \\/    \\/  /  /      /  /_/__ `));
+        console.log(chalk.cyan(`   \\ \\__\\\\ \\__\\\\ \\_______\\\\ \\_______\\\\ \\__\\    \\ \\__\\ __/  / / |\\__\\ /  /\\   \\  __/  / /       |\\________\\\\`));
+        console.log(chalk.cyan(`    \\|__| \\|__| \\|_______| \\|_______| \\|__|     \\|__||\\___/ /  \\|__|/__/ /\\ __\\|\\___/ /         \\|_______|`));
+        console.log(chalk.cyan(`                                                     \\|___|/        |__|/ \\|__|\\|___|/                     `));
+
+        // Print some information about the server to the console and the log file.
+        console.log(chalk.blueBright("-------------------------------------------------------"));
+        console.log(chalk.bgBlue("KoCity Proxy"));
+        console.log(chalk.blueBright("Version: " + require('../package.json').version));
+        console.log(chalk.blueBright("Author: " + require('../package.json').author.name));
+        console.log(chalk.blueBright("Node Version: " + process.version));
+        console.log(chalk.blueBright("OS: " + os.platform() + " " + os.release()));
+        console.log(chalk.blueBright("-------------------------------------------------------"));
+    }
+
     info(message: string) {
         process.stdout.write(chalk.blue(`[${new Date().toLocaleString()}] [INFO] ${message} \n`));
         log.write(`[${new Date().toLocaleString()}] [INFO] ${message} \n`);

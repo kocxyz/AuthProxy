@@ -5,25 +5,35 @@ import { AxiosResponse, AxiosError } from 'axios';
  * Represents the configuration object for the proxy server.
  */
 export interface config {
-    name: string, // The name of the server.
-    authServer: string, // The URL of the authentication server.
-    publicAddr: string, // The public address of the server.
-    maxPlayers: number, // The maximum number of players allowed on the server.
+    /** The name of the server. */
+    name: string, 
+    /** The URL of the authentication server. */
+    authServer: string, 
+    /** The public address of the server. */
+    publicAddr: string, 
+    /** The maximum number of players allowed on the server. */
+    maxPlayers: number,
     external: {
-        port: number, // The external port of the server.
+        /** The port number for external connections. */
+        port: number, 
     },
     internal: {
-        host: string, // The internal host of the server.
-        port: number, // The internal port of the server.
+        /** The host name for internal connections. */
+        host: string, 
+        /** The port number for internal connections. */
+        port: number, 
     },
 }
+
 
 /**
  * Represents the data returned by an authentication error.
  */
 export interface authErrorData {
-    type: string, // The type of the authentication error.
-    message: string, // The error message.
+    /** The type of the authentication error. */
+    type: string, 
+    /** The error message. */
+    message: string, 
 }
 
 /**
@@ -31,16 +41,20 @@ export interface authErrorData {
  */
 export interface authResponse extends AxiosResponse {
     data: {
-        username: string // The username of the authenticated user.
+        /** The username of the authenticated user. */
+        username: string 
     }
 }
 
+
+
 /**
- * Represents the error object returned by a failed authentication request.
+ * Represents an authentication error that extends the AxiosError interface.
  */
 export interface authError extends AxiosError {
     response?: AxiosResponse<unknown, any> & {
-        data?: authErrorData // The data returned by the authentication error.
+        /** The data returned by the authentication error. */
+        data?: authErrorData 
     }
 }
 
