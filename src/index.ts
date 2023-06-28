@@ -57,7 +57,6 @@ app.use(async (req: express.Request, res: express.Response, next: express.NextFu
         server: config.publicAddr
     }).catch((err: authError): null => {
         res.status(401).send("Unauthorized");
-        err.data.
         if(err.response) log.err(`${(err.response.data as authErrorData).type} ${(err.response.data as authErrorData).message}`);
         else log.err(err.message);
         return null;
