@@ -1,0 +1,34 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+var fs_1 = __importDefault(require("fs"));
+var config = JSON.parse(fs_1.default.readFileSync("./config.json", "utf8"));
+var maxPlayers = process.env.MAX_PLAYERS || config.maxPlayers;
+/**
+ * This exports a default object that contains the configuration for the server.
+ * The object contains the following properties:
+ * - name: the name of the server, taken from the environment variable SERVER_NAME or the config file.
+ * - authServer: the URL of the authentication server, taken from the environment variable AUTH_SERVER or the config file.
+ * - publicAddr: the public address of the server, taken from the environment variable PUBLIC_ADDRESS or the config file.
+ * - maxPlayers: the maximum number of players allowed on the server, taken from the environment variable MAX_PLAYERS or the config file.
+ * - external: an object containing the following properties:
+ *   - port: the port number for external connections, taken from the environment variable EXTERNAL_PORT or the config file.
+ * - internal: an object containing the following properties:
+ *   - host: the host name for internal connections, taken from the environment variable INTERNAL_HOST or the config file.
+ *   - port: the port number for internal connections, taken from the environment variable INTERNAL_PORT or the config file.
+ */
+exports.default = {
+    name: process.env.SERVER_NAME || config.name,
+    authServer: process.env.AUTH_SERVER || config.authServer,
+    publicAddr: process.env.PUBLIC_ADDRESS || config.publicAddr,
+    maxPlayers: typeof maxPlayers != "number" ? parseInt(maxPlayers) : maxPlayers,
+    external: {
+        port: process.env.EXTERNAL_PORT || config.external.port,
+    },
+    internal: {
+        host: process.env.INTERNAL_HOST || config.internal.host,
+        port: process.env.INTERNAL_PORT || config.internal.port,
+    },
+};
