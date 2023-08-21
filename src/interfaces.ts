@@ -23,6 +23,14 @@ export interface config {
         /** The port number for internal connections. */
         port: number, 
     },
+    redis: {
+        /** The host name for the Redis server. */
+        host: string,
+        /** The port number for the Redis server. */
+        port: number,
+        /** The password for the Redis server. */
+        password?: string,
+    }
 }
 
 

@@ -31,4 +31,9 @@ export default {
     host: process.env.INTERNAL_HOST || config.internal.host,
     port: process.env.INTERNAL_PORT || config.internal.port,
   },
+  redis: {
+    host: process.env.REDIS_HOST || config.redis.host,
+    port: process.env.REDIS_PORT || config.redis.port,
+    password: process.env.REDIS_PASSWORD || config.redis.password || undefined,
+  },
 } as config

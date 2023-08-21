@@ -2,9 +2,7 @@ import axios from 'axios';
 import express from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import config from './config';
-import chalk from 'chalk';
-import fs from 'fs';
-import os from 'os';
+import { createClient } from 'redis';
 
 import Logger from './logger.js'
 
@@ -14,24 +12,33 @@ const log = new Logger();
 
 if(config.name == "ServerName") log.warn("Please change the name in the config.json or via the environment (SERVER_NAME)");
 
+const redis = createClient({
+    socket: {
+        host: config.redis.host,
+        port: config.redis.port,
+    },
+    password: config.redis.password,
+});
+
+redis.connect().then(() => {
+    log.info("Connected to Redis");
+}).catch((err) => {
+    log.fatal("Failed to connect to Redis");
+    log.fatal(err.message);
+    log.fatal(err.stack ? err.stack.toString() : '');
+    process.exit(1);
+});
 
 const app = express();
 
 app.use(express.json());
 
 app.get('/stats/status', async (req, res) => {
-    log.info(`Status requested by ${req.ip}`);
-
     res.send({
         status: "OK",
         version: require('../package.json').version,
         uptime: process.uptime(),
-        connections: await new Promise((resolve, reject) => {
-            server.getConnections((err, connections) => {
-                if(err) return reject(err);
-                resolve(connections-1);
-            });
-        }),
+        connections: (await redis.KEYS('user:session:*')).length,
         maxConnections: config.maxPlayers,
     });
 });
