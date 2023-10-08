@@ -30,7 +30,7 @@ const prisma = new PrismaClient({
 
 redis.connect().then(() => {
     log.info("Connected to Redis");
-}).catch((err) => {
+}).catch((err: any) => {
     log.fatal("Failed to connect to Redis");
     log.fatal(err.message);
     log.fatal(err.stack ? err.stack.toString() : '');
@@ -38,7 +38,7 @@ redis.connect().then(() => {
 });
 prisma.$connect().then(() => {
     log.info("Connected to Postgres");
-}).catch((err) => {
+}).catch((err: any) => {
     log.fatal("Failed to connect to Postgres");
     log.fatal(err.message);
     log.fatal(err.stack ? err.stack.toString() : '');
