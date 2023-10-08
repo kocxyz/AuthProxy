@@ -30,7 +30,8 @@ export interface config {
         port: number,
         /** The password for the Redis server. */
         password?: string,
-    }
+    },
+    postgres: string,
 }
 
 
@@ -50,7 +51,11 @@ export interface authErrorData {
 export interface authResponse extends AxiosResponse {
     data: {
         /** The username of the authenticated user. */
-        username: string 
+        username: string,
+        /** The custom username color. */
+        color?: string,
+        /** The Velan ID connected to the user on this server. */
+        velanID?: number,
     }
 }
 

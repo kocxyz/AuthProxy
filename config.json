@@ -7,11 +7,12 @@
         "port": 23600
     },
     "internal": {
-        "host": "localhost",
+        "host": "127.0.0.1",
         "port": 23500
     },
     "redis": {
         "host": "127.0.0.1",
         "port": 6380
-    }
+    },
+    "postgres": "postgres://viper:@127.0.0.1:5434/viper"
 }

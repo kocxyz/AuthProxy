@@ -1,0 +1,888 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model allowlisted_users {
+    notes                String?
+    created_at           BigInt
+    user_id              BigInt  @id
+    always_allow_login   Boolean @default(false)
+    velan_value_transfer Boolean @default(false)
+    force_cohort_a       Boolean @default(false)
+    force_cohort_b       Boolean @default(false)
+    content_update       Boolean @default(false)
+}
+
+model backends {
+    id          BigInt  @id @default(autoincrement())
+    active_time BigInt  @default(dbgenerated("date_part('epoch'::text, now())"))
+    ordinal     Int?    @unique(map: "backends_ordinal_unique")
+    is_active   Boolean @default(true)
+}
+
+model blocks {
+    user_id                             BigInt
+    blocked_user_id                     BigInt
+    users_blocks_blocked_user_idTousers users  @relation("blocks_blocked_user_idTousers", fields: [blocked_user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+    users_blocks_user_idTousers         users  @relation("blocks_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+    @@id([user_id, blocked_user_id])
+}
+
+model brawl_pass {
+    user_id                     BigInt @id
+    premium_season              Int?
+    level_season                Int?
+    level                       Int?
+    last_rewarded_level         Int    @default(0)
+    last_premium_rewarded_level Int    @default(0)
+    users                       users  @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model brawl_pass_rewards {
+    season           Int
+    brawl_pass_level Int
+    premium_only     Boolean
+    reward           String?
+
+    @@id([season, brawl_pass_level])
+}
+
+model commerce_accessories {
+    item                 String   @id @db.Uuid
+    is_crew              Boolean?
+    is_consumable        Boolean?
+    ui_name              String?
+    rarity               String?
+    accessory_type       String?
+    platform_restriction String?
+}
+
+model commerce_codes {
+    code             String  @id(map: "commerce_codes_pk") @db.VarChar
+    use_limit        Int
+    uses             Int     @default(0)
+    offer_id         String  @db.VarChar
+    create_user      String  @db.VarChar
+    create_timestamp BigInt
+    revoked          Boolean @default(false)
+
+    @@index([code])
+}
+
+model commerce_codes_redeemed {
+    user_id   BigInt
+    code      String @db.VarChar
+    timestamp BigInt
+
+    @@id([user_id, code])
+    @@index([user_id, code], map: "commerce_codes_redeemed_user_id_idx")
+}
+
+model commerce_crew_inventory_equipped {
+    crew_guid String  @db.Uuid
+    slot      String
+    content   String? @db.Uuid
+    crews     crews   @relation(fields: [crew_guid], references: [guid], onDelete: Cascade, onUpdate: NoAction, map: "commerce_crew_inventory_equipped_crew_uuid_fkey")
+
+    @@unique([crew_guid, slot], map: "commerce_crew_inventory_equipped_pkey")
+    @@index([crew_guid, content], map: "commerce_crew_inventory_equipped_crew_id_content")
+}
+
+model commerce_currencies {
+    alias         String   @id
+    premium       Boolean?
+    currency_name String?
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model commerce_funds {
+    user_id                    BigInt
+    currency                   String
+    balance                    Int
+    users                      users                        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+    commerce_funds_expirations commerce_funds_expirations[]
+
+    @@id([user_id, currency])
+}
+
+model commerce_funds_expirations {
+    user_id        BigInt
+    currency       String
+    amount         Int?
+    granted_at     BigInt
+    expires_at     BigInt
+    commerce_funds commerce_funds @relation(fields: [user_id, currency], references: [user_id, currency], onDelete: NoAction, onUpdate: NoAction)
+
+    @@id([user_id, currency, granted_at])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model commerce_inventory_consumables {
+    user_id             BigInt
+    content             String @db.Uuid
+    consumable_quantity Int
+    users               users  @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+    @@id([user_id, content])
+}
+
+model commerce_inventory_durables {
+    user_id      BigInt
+    content      String  @db.Uuid
+    is_favorited Boolean @default(false)
+    users        users   @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+    @@id([user_id, content])
+}
+
+model commerce_inventory_durables_inactive {
+    user_id BigInt
+    content String @db.Uuid
+    users   users  @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+    @@id([user_id, content])
+}
+
+model commerce_inventory_equipped {
+    user_id BigInt
+    slot    String
+    content String? @db.Uuid
+    users   users   @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+    @@id([user_id, slot])
+}
+
+model commerce_inventory_initial {
+    contents String @id @db.Uuid
+}
+
+model commerce_offer_currencies {
+    offer           String          @db.Uuid
+    currency        String
+    amount          Int
+    commerce_offers commerce_offers @relation(fields: [offer], references: [offer], onDelete: Cascade, onUpdate: NoAction)
+
+    @@id([offer, currency])
+}
+
+model commerce_offer_item_contents {
+    offer                String               @db.Uuid
+    item_index           Int
+    contents             String?              @db.Uuid
+    commerce_offer_items commerce_offer_items @relation(fields: [offer, item_index], references: [offer, item_index], onDelete: Cascade, onUpdate: NoAction)
+
+    @@id([offer, item_index])
+    @@index([offer, item_index], map: "commerce_offer_item_contents_index")
+}
+
+model commerce_offer_items {
+    offer                        String                         @db.Uuid
+    item_index                   Int
+    quantity                     Int
+    price                        Int
+    commerce_offer_item_contents commerce_offer_item_contents[]
+    commerce_offers              commerce_offers                @relation(fields: [offer], references: [offer], onDelete: Cascade, onUpdate: NoAction)
+
+    @@id([offer, item_index])
+    @@unique([offer, item_index])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model commerce_offers {
+    offer                     String                      @id @db.Uuid
+    currency                  String?
+    full_price                Int
+    min_price                 Int
+    purchase_limit            Int?
+    commerce_offer_currencies commerce_offer_currencies[]
+    commerce_offer_items      commerce_offer_items[]
+}
+
+model commerce_offers_purchased_with_limits {
+    user_id  BigInt
+    offer    String @db.Uuid
+    quantity Int?
+    users    users  @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+    @@id([user_id, offer])
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model commerce_random_reward_accessories {
+    reward                        String                        @db.Uuid
+    group_index                   Int
+    collection_index              Int
+    content                       String                        @db.Uuid
+    commerce_random_reward_groups commerce_random_reward_groups @relation(fields: [reward, group_index], references: [reward, group_index], onDelete: Cascade, onUpdate: NoAction)
+
+    @@id([reward, content])
+}
+
+model commerce_random_reward_groups {
+    reward                             String                               @db.Uuid
+    group_index                        Int
+    weight                             Int
+    quantity                           Int
+    commerce_random_reward_accessories commerce_random_reward_accessories[]
+
+    @@id([reward, group_index])
+}
+
+model content_update_files {
+    name  String  @id
+    value String?
+}
+
+model contract_numerators {
+    user_id   BigInt
+    guid      String @db.Uuid
+    platform  Int
+    numerator Int?
+    users     users  @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+    @@id([user_id, guid, platform])
+}
+
+model contract_progress {
+    user_id           BigInt
+    contract_guid     String @db.Uuid
+    contract_stage    Int
+    contract_platform Int
+    state             Int    @default(1)
+    users             users  @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+    @@id([user_id, contract_guid, contract_stage, contract_platform])
+}
+
+model contracts {
+    guid          String  @db.Uuid
+    stage         Int     @default(0)
+    platform      Int     @default(0)
+    contract_name String?
+    denominator   Int
+    can_reset     Boolean @default(false)
+    stage_count   Int     @default(1)
+    reward        String?
+    token         String?
+
+    @@id([guid, stage, platform])
+}
+
+model crew_contract_rewards {
+    contract_guid String  @id @db.Uuid
+    reward        String?
+}
+
+model crew_contracts {
+    crew_guid            String @db.Uuid
+    contract_guid        String @db.Uuid
+    completion_progress  Int?
+    completion_criteria  Int
+    activation_timestamp BigInt
+    lifetime_ms          BigInt
+    crews                crews  @relation(fields: [crew_guid], references: [guid], onDelete: Cascade, onUpdate: NoAction)
+
+    @@unique([crew_guid, contract_guid], map: "crew_contracts_pkey")
+}
+
+model crew_contracts_user_rewards {
+    user_id              BigInt
+    contract_guid        String  @db.Uuid
+    expiration_timestamp BigInt?
+    reward_state         Int?
+    users                users   @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+    @@id([user_id, contract_guid])
+}
+
+model crew_invites {
+    user_id                             BigInt
+    sender_id                           BigInt
+    crew_guid                           String @db.Uuid
+    sender_persona_kind                 Int    @default(0)
+    crews                               crews  @relation(fields: [crew_guid], references: [guid], onDelete: Cascade, onUpdate: NoAction, map: "crew_invites_crew_uuid_fkey")
+    users_crew_invites_sender_idTousers users  @relation("crew_invites_sender_idTousers", fields: [sender_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+    users_crew_invites_user_idTousers   users  @relation("crew_invites_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+    @@id([user_id, sender_id])
+    @@index([crew_guid], map: "crew_invites_crew_uuid")
+    @@index([sender_id], map: "crews_invites_sender_id_idx")
+}
+
+model crew_join_requests {
+    recipient_id                                 BigInt
+    sender_id                                    BigInt
+    crew_guid                                    String @db.Uuid
+    crews                                        crews  @relation(fields: [crew_guid], references: [guid], onDelete: Cascade, onUpdate: NoAction, map: "crew_join_requests_crew_uuid_fkey")
+    users_crew_join_requests_recipient_idTousers users  @relation("crew_join_requests_recipient_idTousers", fields: [recipient_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+    users_crew_join_requests_sender_idTousers    users  @relation("crew_join_requests_sender_idTousers", fields: [sender_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+    @@id([recipient_id, sender_id])
+    @@index([crew_guid], map: "crew_join_requests_crew_uuid")
+}
+
+model crew_members {
+    user_id   BigInt @id
+    crew_guid String @db.Uuid
+    joined_at BigInt
+    crews     crews  @relation(fields: [crew_guid], references: [guid], onDelete: Cascade, onUpdate: NoAction, map: "crew_members_crew_uuid_fkey")
+    users     users  @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+    @@index([crew_guid], map: "crew_members_crew_uuid")
+}
+
+model crews {
+    guid                             String                             @id @db.Uuid
+    captain                          BigInt
+    name                             String
+    code                             Int
+    created_at                       BigInt
+    updated_at                       BigInt?
+    name_visible                     Boolean?                           @default(true)
+    namer                            BigInt?
+    commerce_crew_inventory_equipped commerce_crew_inventory_equipped[]
+    crew_contracts                   crew_contracts[]
+    crew_invites                     crew_invites[]
+    crew_join_requests               crew_join_requests[]
+    crew_members                     crew_members[]
+    users                            users                              @relation(fields: [captain], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+    @@unique([name, code], map: "unique_crews_name")
+    @@index([name, code, updated_at])
+}
+
+model data_manifest_changelists {
+    id                      Int                      @id @default(autoincrement())
+    changelist_number       BigInt
+    platform_id             Int
+    data_manifest_platforms data_manifest_platforms  @relation(fields: [platform_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_data_manifest_platforms")
+    data_manifest_packages  data_manifest_packages[]
+
+    @@index([platform_id], map: "data_manifest_platforms_platform_id")
+}
+
+model data_manifest_packages {
+    id                        Int                       @id @default(autoincrement())
+    changelist_id             Int
+    url                       String
+    file_name                 String
+    file_hash                 String
+    file_size_bytes           BigInt
+    mode                      String?
+    build                     String?
+    build_url                 String?
+    release_version           String?
+    content_update_version    String?
+    requires_allowlist        Boolean                   @default(false)
+    data_manifest_changelists data_manifest_changelists @relation(fields: [changelist_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_data_manifest_changelists")
+
+    @@index([changelist_id], map: "data_manifest_changelists_changelist_id")
+}
+
+model data_manifest_platforms {
+    id                        Int                         @id @default(autoincrement())
+    name                      String                      @unique
+    data_manifest_changelists data_manifest_changelists[]
+}
+
+model deny_login_period_messages {
+    id                   Int                @id @default(autoincrement())
+    message              String
+    language_code        String
+    deny_login_period_id Int
+    deny_login_periods   deny_login_periods @relation(fields: [deny_login_period_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_deny_login_periods")
+}
+
+model deny_login_periods {
+    start_time                 BigInt
+    end_time                   BigInt
+    id                         Int                          @id @default(autoincrement())
+    deny_login_period_messages deny_login_period_messages[]
+}
+
+model fleet_images {
+    image_id           Int              @id
+    version            Int
+    project            String
+    build_id           Int
+    account_service_id Int
+    updated_at         BigInt
+    name               String?
+    network_version    Int?
+    pinned             Boolean          @default(false)
+    broken             Boolean          @default(false)
+    fleet_profiles     fleet_profiles[]
+}
+
+model fleet_profiles {
+    profile_id     Int          @id
+    fleet_id       String
+    fleet_image_id Int
+    density        String?
+    fleet_images   fleet_images @relation(fields: [fleet_image_id], references: [image_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_fleet_images")
+
+    @@index([fleet_image_id], map: "fleet_images_fleet_image_id")
+}
+
+model friend_requests {
+    sender_user_id                                 BigInt
+    recipient_user_id                              BigInt
+    sender_persona_kind                            Int    @default(0)
+    users_friend_requests_recipient_user_idTousers users  @relation("friend_requests_recipient_user_idTousers", fields: [recipient_user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+    users_friend_requests_sender_user_idTousers    users  @relation("friend_requests_sender_user_idTousers", fields: [sender_user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+    @@id([sender_user_id, recipient_user_id])
+    @@index([recipient_user_id], map: "friend_requests_recipient_user_id")
+    @@index([sender_user_id], map: "friend_requests_sender_user_id")
+}
+
+model friends {
+    user_id                             BigInt
+    friend_user_id                      BigInt
+    users_friends_friend_user_idTousers users  @relation("friends_friend_user_idTousers", fields: [friend_user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+    users_friends_user_idTousers        users  @relation("friends_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+    @@id([user_id, friend_user_id])
+    @@index([friend_user_id], map: "friends_friend_user_id")
+}
+
+model ftue_breadcrumbs {
+    user_id         BigInt @id
+    breadcrumb_step Int?
+}
+
+model inactive_locations {
+    location_id Int @id
+}
+
+model inactive_regions {
+    region_id String @id
+}
+
+model join_in_progress_players {
+    game_server_uuid  String?
+    team_id           Int?
+    timestamp         BigInt?
+    last_poll_time    BigInt  @default(0)
+    id                BigInt  @id @default(autoincrement())
+    average_mmr       Int     @default(2500)
+    playlist_guid     String  @db.Uuid
+    region            String
+    match_flow        Int
+    client_version    Int
+    tier              Int     @default(0)
+    division          Int     @default(0)
+    platform          String
+    crossplay_allowed Boolean
+    average_sr        Int     @default(0)
+
+    @@index([game_server_uuid], map: "join_in_progress_players_game_server_uuid")
+    @@index([last_poll_time])
+}
+
+model key_value_pairs {
+    user_id BigInt
+    key     String
+    value   String
+    users   users  @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+    @@id([user_id, key])
+}
+
+model linear_ftue {
+    user_id                  BigInt @id
+    training_number          Int?
+    training_item_progress_0 Int?
+    training_item_progress_1 Int?
+    training_item_progress_2 Int?
+    training_item_progress_3 Int?
+    step                     Int?
+}
+
+model matchmaking {
+    user_id                       BigInt   @id
+    start_time                    BigInt?
+    playlist_guid                 String?  @db.Uuid
+    match_flow                    Int
+    eligible_for_join_in_progress Boolean  @default(true)
+    group_size                    Int      @default(1)
+    mmr                           Int?
+    volatility                    Int?
+    best_region                   String
+    client_version                Int
+    platform                      String
+    crossplay                     Boolean  @default(true)
+    tier                          Int?
+    division                      Int?
+    request_id                    Int      @default(0)
+    games_played                  Int      @default(10)
+    pings                         String?
+    new_players_count             Int      @default(0)
+    new_player_matchmaking_tier   Int      @default(0)
+    skill_rating                  Int      @default(0)
+    manual_region                 Boolean?
+
+    @@index([match_flow])
+    @@index([start_time])
+}
+
+model matchmaking_cooldown {
+    user_id BigInt @id
+    utc     Int?
+}
+
+model matchmaking_parameters {
+    parameter        Int @id
+    time_interval    Int
+    initial_value    Int
+    max_value        Int
+    rate_of_increase Int
+}
+
+model matchmaking_work {
+    playlist_guid  String @db.Uuid
+    match_flow     Int
+    client_version Int
+    backend_id     Int?
+    last_poll_time BigInt
+
+    @@id([playlist_guid, match_flow, client_version], map: "matchmaking_work_pk")
+}
+
+model new_news {
+    name           String           @id
+    start_at       BigInt?
+    end_at         BigInt?
+    new_news_items new_news_items[]
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model new_news_item_text {
+    news_name      String
+    item_name      String
+    language       String?
+    title          String?
+    message        String?
+    tab_title      String?
+    cta_1          String?
+    cta_2          String?
+    new_news_items new_news_items? @relation(fields: [news_name, item_name], references: [news_name, name], onDelete: Cascade, onUpdate: NoAction)
+
+    @@id([news_name, item_name])
+}
+
+model new_news_items {
+    news_name           String
+    name                String
+    priority            Int?
+    platforms           String?
+    tab_type            Int?                 @default(0)
+    fg_image_index      Int?                 @default(-1)
+    bg_image_index      Int?                 @default(-1)
+    cta_base_color      String?
+    cta_energy_color    String?
+    target_bundle_index Int?                 @default(-2)
+    new_news_item_text  new_news_item_text[]
+    new_news            new_news             @relation(fields: [news_name], references: [name], onDelete: Cascade, onUpdate: NoAction)
+
+    @@id([news_name, name])
+}
+
+model news {
+    name       String       @id
+    start_at   BigInt?
+    end_at     BigInt?
+    news_items news_items[]
+}
+
+model news_item_text {
+    news_name  String
+    item_name  String
+    language   String?
+    title      String?
+    message    String?
+    news_items news_items? @relation(fields: [news_name, item_name], references: [news_name, name], onDelete: Cascade, onUpdate: NoAction)
+
+    @@id([news_name, item_name])
+}
+
+model news_items {
+    news_name      String
+    name           String
+    priority       Int?
+    slot_0         Boolean?         @default(true)
+    slot_1         Boolean?         @default(true)
+    slot_2         Boolean?         @default(true)
+    platforms      String?
+    image_index    Int?
+    news_item_text news_item_text[]
+    news           news             @relation(fields: [news_name], references: [name], onDelete: Cascade, onUpdate: NoAction)
+
+    @@id([news_name, name])
+}
+
+model ping_data {
+    user_id BigInt
+    region  String
+    ping    Int
+    users   users  @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+    @@id([user_id, region])
+    @@index([user_id], map: "ping_data_user_id")
+}
+
+model playlists {
+    guid                          String   @id @db.Uuid
+    name                          String?
+    team_size                     Int
+    team_count                    Int
+    active_custom                 Boolean? @default(true)
+    active_tutorial               Boolean? @default(true)
+    active_quickplay              Boolean? @default(true)
+    active_ranked                 Boolean? @default(true)
+    metadata                      String?
+    allow_new_player_matchmaking  Boolean  @default(false)
+    is_practice_training_playlist Boolean  @default(false)
+    allow_replacement_droids      Boolean  @default(false)
+}
+
+model quit_penalties {
+    marks      Int @id
+    duration_s Int
+}
+
+model recent_players {
+    user_id                                           BigInt
+    recent_player_user_id                             BigInt
+    timestamp                                         BigInt @default(dbgenerated("(date_part('epoch'::text, now()) * (1000)::double precision)"))
+    users_recent_players_recent_player_user_idTousers users  @relation("recent_players_recent_player_user_idTousers", fields: [recent_player_user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+    users_recent_players_user_idTousers               users  @relation("recent_players_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+    @@id([user_id, recent_player_user_id])
+    @@index([recent_player_user_id], map: "recent_players_recent_player_user_id")
+}
+
+model season_leaderboard_rewards {
+    season       Int
+    highest_rank Int
+    lowest_rank  Int
+    reward       String?
+
+    @@id([season, highest_rank, lowest_rank])
+}
+
+model season_rank {
+    user_id                     BigInt
+    season                      Int
+    highest_rank                Int
+    season_rewards_granted      Boolean
+    leaderboard_rewards_granted Boolean @default(false)
+    users                       users   @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+    @@id([user_id, season])
+}
+
+model season_rewards {
+    season      Int
+    league_tier Int
+    reward      String?
+
+    @@id([season, league_tier])
+}
+
+model settings_global {
+    key   String  @id
+    value String?
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model skill {
+    user_id                     BigInt
+    playlist_guid               String @db.Uuid
+    match_flow                  Int
+    current_mmr                 Int?
+    current_tier                Int?
+    current_division            Int?
+    current_division_progress   Int?
+    volatility                  Int?
+    win_streak                  Int    @default(0)
+    timestamp                   Int    @default(0)
+    season                      Int?
+    skill_rating                Int?
+    total_games_played          Int?
+    wins                        Int?
+    mvps                        Int?
+    decay_timestamp             Int?
+    skill_rating_decayed        Int?
+    last_match_loss_forgiveness Int?
+    users                       users  @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+    @@unique([user_id, playlist_guid, match_flow], map: "skill_pkey")
+    @@index([playlist_guid], map: "skill_playlist_guid")
+    @@index([skill_rating])
+}
+
+model stats_global {
+    key   String @id
+    value BigInt @default(0)
+}
+
+model street_rank {
+    user_id             BigInt @id
+    raw_xp              Int
+    last_rewarded_xp    Int    @default(-1)
+    raw_xp_s6           Int    @default(0)
+    last_rewarded_xp_s6 Int    @default(-1)
+    users               users  @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model street_rank_rewards {
+    raw_level Int     @id
+    total_xp  Int?
+    delta_xp  Int?
+    tier      Int?
+    level     Int?
+    reward    String?
+}
+
+model street_rank_rewards_season_6 {
+    raw_level Int     @id(map: "raw_level_s6_pk")
+    total_xp  Int?
+    delta_xp  Int?
+    tier      Int?
+    level     Int?
+    reward    String?
+
+    @@ignore
+}
+
+model thank_you_bonus_qualified_users {
+    user_id           BigInt   @id
+    granted_timestamp Int?
+    displayed         Boolean?
+
+    @@ignore
+}
+
+model thank_you_bonus_rewards {
+    season  Int    @id
+    rewards String
+
+    @@ignore
+}
+
+model user_migration_work {
+    key        String  @id
+    backend_id BigInt?
+
+    @@ignore
+}
+
+model user_settings {
+    user_id BigInt
+    key     String
+    value   String @default("0")
+    users   users  @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+    @@id([user_id, key])
+    @@index([user_id], map: "user_settings_user_id")
+}
+
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
+model users {
+    id                                                         BigInt                                  @id @default(autoincrement())
+    auth_provider                                              String
+    nucleus_id                                                 BigInt?                                 @unique(map: "users_nucleus_id_unique")
+    username                                                   String
+    inserted_at                                                BigInt?
+    last_authenticated_at                                      BigInt?
+    username_visible                                           Boolean?                                @default(true)
+    xbox_persona_id                                            BigInt?
+    switch_persona_id                                          BigInt?
+    playstation_persona_id                                     BigInt?
+    origin_persona_id                                          BigInt?
+    xbox_platform_id                                           BigInt?
+    switch_platform_id                                         BigInt?
+    playstation_platform_id                                    BigInt?
+    origin_platform_id                                         BigInt?
+    delete_scheduled_for                                       BigInt?
+    publisher_username                                         String
+    last_authenticated_persona_namespace                       String
+    steam_persona_id                                           BigInt?
+    last_authenticated_platform                                String?
+    steam_platform_id                                          BigInt?
+    epic_account_id                                            String?                                 @unique(map: "users_epic_account_id_unique")
+    epic_connect_id                                            String?                                 @unique(map: "users_epic_connect_id_unique")
+    currency_expires                                           Boolean?
+    epic_account_id_abandoned                                  String?
+    epic_connect_id_abandoned                                  String?
+    nucleus_id_abandoned                                       BigInt?
+    publisher_username_code                                    Int?
+    gamesight_id                                               BigInt                                  @default(0)
+    blocks_blocks_blocked_user_idTousers                       blocks[]                                @relation("blocks_blocked_user_idTousers")
+    blocks_blocks_user_idTousers                               blocks[]                                @relation("blocks_user_idTousers")
+    brawl_pass                                                 brawl_pass?
+    commerce_funds                                             commerce_funds[]
+    commerce_inventory_consumables                             commerce_inventory_consumables[]
+    commerce_inventory_durables                                commerce_inventory_durables[]
+    commerce_inventory_durables_inactive                       commerce_inventory_durables_inactive[]
+    commerce_inventory_equipped                                commerce_inventory_equipped[]
+    commerce_offers_purchased_with_limits                      commerce_offers_purchased_with_limits[]
+    contract_numerators                                        contract_numerators[]
+    contract_progress                                          contract_progress[]
+    crew_contracts_user_rewards                                crew_contracts_user_rewards[]
+    crew_invites_crew_invites_sender_idTousers                 crew_invites[]                          @relation("crew_invites_sender_idTousers")
+    crew_invites_crew_invites_user_idTousers                   crew_invites[]                          @relation("crew_invites_user_idTousers")
+    crew_join_requests_crew_join_requests_recipient_idTousers  crew_join_requests[]                    @relation("crew_join_requests_recipient_idTousers")
+    crew_join_requests_crew_join_requests_sender_idTousers     crew_join_requests[]                    @relation("crew_join_requests_sender_idTousers")
+    crew_members                                               crew_members?
+    crews                                                      crews[]
+    friend_requests_friend_requests_recipient_user_idTousers   friend_requests[]                       @relation("friend_requests_recipient_user_idTousers")
+    friend_requests_friend_requests_sender_user_idTousers      friend_requests[]                       @relation("friend_requests_sender_user_idTousers")
+    friends_friends_friend_user_idTousers                      friends[]                               @relation("friends_friend_user_idTousers")
+    friends_friends_user_idTousers                             friends[]                               @relation("friends_user_idTousers")
+    key_value_pairs                                            key_value_pairs[]
+    ping_data                                                  ping_data[]
+    recent_players_recent_players_recent_player_user_idTousers recent_players[]                        @relation("recent_players_recent_player_user_idTousers")
+    recent_players_recent_players_user_idTousers               recent_players[]                        @relation("recent_players_user_idTousers")
+    season_rank                                                season_rank[]
+    skill                                                      skill[]
+    street_rank                                                street_rank?
+    user_settings                                              user_settings[]
+
+    @@unique([publisher_username, publisher_username_code], map: "publisher_username_and_code_unique")
+    @@index([delete_scheduled_for], map: "users_delete_scheduled_for_index")
+    @@index([epic_account_id], map: "users_epic_account_id_index")
+    @@index([epic_connect_id], map: "users_epic_connect_id_index")
+    @@index([last_authenticated_persona_namespace], map: "users_last_authenticated_persona_namespace_index")
+    @@index([nucleus_id, auth_provider], map: "users_nucleus_id_auth_provider")
+    @@index([origin_platform_id], map: "users_origin_platform_id_index")
+    @@index([playstation_platform_id], map: "users_playstation_platform_id_index")
+    @@index([steam_platform_id], map: "users_steam_platform_id_index")
+    @@index([switch_platform_id], map: "users_switch_platform_id_index")
+    @@index([xbox_platform_id], map: "users_xbox_platform_id_index")
+}
+
+//
+model value_transfer_fulfilled_nintendo {
+    user_id        BigInt
+    entitlement_id String @db.Uuid
+
+    @@unique([user_id, entitlement_id], map: "value_transfer_fulfilled_nintendo_user_id_idx")
+    @@ignore
+}
+
+// Versioning Table for Viper SQL
+model vsql_db_version {
+    id           Int      @id @default(autoincrement())
+    version_id   BigInt
+    is_applied   Boolean
+    tstamp       DateTime @default(now()) @db.Timestamp(6)
+    rollback_sql String
+}
