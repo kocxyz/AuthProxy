@@ -14,5 +14,8 @@
         "host": "127.0.0.1",
         "port": 6380
     },
-    "postgres": "postgres://viper:@127.0.0.1:5434/viper"
+    "postgres": "postgres://viper:@127.0.0.1:5434/viper",
+    "mod": {
+        "dirPath": "mods"
+    }
 }

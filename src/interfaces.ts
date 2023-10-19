@@ -32,6 +32,9 @@ export interface config {
         password?: string,
     },
     postgres: string,
+    mod: {
+        dirPath: string,
+    },
 }
 
 
