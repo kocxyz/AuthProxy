@@ -8,10 +8,15 @@ import { PrismaClient } from '@prisma/client'
 import Logger from './logger.js'
 
 import { authError, authResponse, authErrorData } from './interfaces'
+import { EvaluationResult, ModEvaluator, ModLoader, OutGenerator } from 'knockoutcity-mod-loader';
+import { createZipFromFolder } from './ziputil';
+
+import path from 'node:path';
+import os from 'node:os';
 
 const log = new Logger();
 
-if(config.name == "ServerName") log.warn("Please change the name in the config.json or via the environment (SERVER_NAME)");
+if (config.name == "ServerName") log.warn("Please change the name in the config.json or via the environment (SERVER_NAME)");
 
 const redis = createClient({
     socket: {
@@ -59,18 +64,70 @@ app.get('/stats/status', async (req, res) => {
     });
 });
 
+const modLoader = new ModLoader({
+    modDir: config.mod.dirPath,
+});
+
+const createModZip = async (modPath: string): Promise<Buffer> => {
+    const zip = await createZipFromFolder(modPath);
+    return zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
+};
+
+app.get('/mods/list', async (req, res) => {
+    const mods = modLoader.loadModManifests();
+
+    return res.json(
+        await Promise.all(
+            mods
+                .filter((mod) => mod.manifest.type === 'server-client')
+                .map(async (mod) => ({
+                    name: mod.manifest.name,
+                    version: mod.manifest.version,
+                }))
+        )
+    );
+});
+
+app.get('/mods/download', async (req, res) => {
+    const mods = modLoader.loadMods();
+    const clientServerMods = mods.filter((mod) => mod.manifest.type === 'server-client');
+
+    if (clientServerMods.length === 0) {
+        return res.status(400).send();
+    }
+
+    const evaluationResults: EvaluationResult[] = [];
+    for (const mod of clientServerMods) {
+        const modEvaluator = new ModEvaluator(mod, { modsConfigDir: config.mod.configDirPath });
+        evaluationResults.push(await modEvaluator.evaulate())
+    }
+
+    const tempDirPath = path.join(os.tmpdir(), 'generated-mod-output');
+    const outGenerator = new OutGenerator({ baseDir: tempDirPath});
+    await outGenerator.generate(evaluationResults);
+
+    const zipBuffer = await createModZip(tempDirPath);
+    return (
+        res
+            .header('Content-Disposition', `attachment; filename="mods.zip"`)
+            .contentType('application/zip')
+            .send(zipBuffer)
+    );
+});
+
+
 app.use(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     log.info(`Request from ${req.ip} to ${req.url}`);
     res.set('X-Powered-By', 'KoCity Proxy');
 
-    if(!req.body.credentials) {
+    if (!req.body.credentials) {
         log.info("No credentials");
         return next();
     }
 
     const authkey = req.body.credentials.username
 
-    if(!authkey) {
+    if (!authkey) {
         log.info("Invalid credentials");
         return res.status(401).send("Invalid credentials");
     }
@@ -80,27 +137,27 @@ app.use(async (req: express.Request, res: express.Response, next: express.NextFu
         server: config.publicAddr
     }).catch((err: authError): null => {
         res.status(401).send("Unauthorized");
-        if(err.response) log.err(`${(err.response.data as authErrorData).type} ${(err.response.data as authErrorData).message}`);
+        if (err.response) log.err(`${(err.response.data as authErrorData).type} ${(err.response.data as authErrorData).message}`);
         else log.err(err.message);
         return null;
     });
 
-    if(!response) return log.info("Request denied");
+    if (!response) return log.info("Request denied");
 
-    if(!response.data?.username) {
+    if (!response.data?.username) {
         log.info("Request denied");
         return res.status(401).send("Unauthorized");
     }
 
-    if(!response.data.velanID) {
+    if (!response.data.velanID) {
         let localUser = await prisma.users.findFirst({
             where: {
                 username: response.data.username,
             }
         });
-        
+
         let velanID: number | undefined;
-        if(!localUser) {
+        if (!localUser) {
             const createdUser = await axios.post(`http://${config.internal.host}:${config.internal.port}/api/auth`, {
                 credentials: {
                     username: response.data.username,
@@ -124,17 +181,17 @@ app.use(async (req: express.Request, res: express.Response, next: express.NextFu
             velanID
         }).catch((err: authError): null => {
             res.status(401).send("Unauthorized");
-            if(err.response) log.err(`${(err.response.data as authErrorData).type} ${(err.response.data as authErrorData).message}`);
+            if (err.response) log.err(`${(err.response.data as authErrorData).type} ${(err.response.data as authErrorData).message}`);
             else log.err(err.message);
             return null;
         });
-        if(!saved) return log.info("Request denied");
+        if (!saved) return log.info("Request denied");
 
         response.data.velanID = velanID;
     }
-    if(!response.data.velanID) return log.info("Request denied");
+    if (!response.data.velanID) return log.info("Request denied");
 
-    await prisma.users.update({ 
+    await prisma.users.update({
         where: {
             id: Number(response.data.velanID)
         },
@@ -148,7 +205,7 @@ app.use(async (req: express.Request, res: express.Response, next: express.NextFu
     req.body.credentials.username = `${response.data.color ? `:${response.data.color}FF:` : ''}${response.data.username}`
     req.headers['content-length'] = Buffer.byteLength(JSON.stringify(req.body)).toString();
     next();
-  })
+})
 
 const proxy = createProxyMiddleware({
     target: `http://${config.internal.host}:${config.internal.port}`,
