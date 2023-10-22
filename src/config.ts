@@ -36,5 +36,9 @@ export default {
     port: process.env.REDIS_PORT || config.redis.port,
     password: process.env.REDIS_PASSWORD || config.redis.password || undefined,
   },
-  postgres: process.env.DATABASE_URL || config.postgres
+  postgres: process.env.DATABASE_URL || config.postgres,
+  mod: {
+    dirPath: process.env.MOD_DIR_PATH || config.mod.dirPath,
+    configDirPath: process.env.MOD_CONFIG_DIR_PATH || config.mod.configDirPath,
+  },
 } satisfies config
