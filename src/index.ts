@@ -146,6 +146,7 @@ app.use(async (req: express.Request, res: express.Response, next: express.NextFu
     log.info(`Request accepted for ${response.data.username}`);
 
     req.body.credentials.username = `${response.data.color ? `:${response.data.color}FF:` : ''}${response.data.username}`
+    req.body.auth_provider = 'dev'
     req.headers['content-length'] = Buffer.byteLength(JSON.stringify(req.body)).toString();
     next();
 })
