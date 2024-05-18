@@ -8,11 +8,6 @@ import { PrismaClient } from '@prisma/client'
 import Logger from './logger.js'
 
 import { authError, authResponse, authErrorData } from './interfaces'
-import { EvaluationResult, ModEvaluator, ModLoader, OutGenerator } from 'knockoutcity-mod-loader';
-import { createZipFromFolder } from './ziputil';
-
-import path from 'node:path';
-import os from 'node:os';
 
 const log = new Logger();
 
@@ -63,58 +58,6 @@ app.get('/stats/status', async (req, res) => {
         maxConnections: config.maxPlayers,
     });
 });
-
-const modLoader = new ModLoader({
-    modDir: config.mod.dirPath,
-});
-
-const createModZip = async (modPath: string): Promise<Buffer> => {
-    const zip = await createZipFromFolder(modPath);
-    return zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
-};
-
-app.get('/mods/list', async (req, res) => {
-    const mods = modLoader.loadModManifests();
-
-    return res.json(
-        await Promise.all(
-            mods
-                .filter((mod) => mod.manifest.type === 'server-client')
-                .map(async (mod) => ({
-                    name: mod.manifest.name,
-                    version: mod.manifest.version,
-                }))
-        )
-    );
-});
-
-app.get('/mods/download', async (req, res) => {
-    const mods = modLoader.loadMods();
-    const clientServerMods = mods.filter((mod) => mod.manifest.type === 'server-client');
-
-    if (clientServerMods.length === 0) {
-        return res.status(400).send();
-    }
-
-    const evaluationResults: EvaluationResult[] = [];
-    for (const mod of clientServerMods) {
-        const modEvaluator = new ModEvaluator(mod, { modsConfigDir: config.mod.configDirPath });
-        evaluationResults.push(await modEvaluator.evaulate())
-    }
-
-    const tempDirPath = path.join(os.tmpdir(), 'generated-mod-output');
-    const outGenerator = new OutGenerator({ baseDir: tempDirPath});
-    await outGenerator.generate(evaluationResults);
-
-    const zipBuffer = await createModZip(tempDirPath);
-    return (
-        res
-            .header('Content-Disposition', `attachment; filename="mods.zip"`)
-            .contentType('application/zip')
-            .send(zipBuffer)
-    );
-});
-
 
 app.use(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     log.info(`Request from ${req.ip} to ${req.url}`);
@@ -203,6 +146,7 @@ app.use(async (req: express.Request, res: express.Response, next: express.NextFu
     log.info(`Request accepted for ${response.data.username}`);
 
     req.body.credentials.username = `${response.data.color ? `:${response.data.color}FF:` : ''}${response.data.username}`
+    req.body.auth_provider = 'dev'
     req.headers['content-length'] = Buffer.byteLength(JSON.stringify(req.body)).toString();
     next();
 })
