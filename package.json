@@ -1,6 +1,6 @@
 {
   "name": "kocity-proxy",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "description": "A simple auth proxy server for kocity",
   "main": "dist/index.js",
   "scripts": {
