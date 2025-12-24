@@ -1,0 +1,39 @@
+{
+    "name": "ServerName",
+    "authServer": "https://api.kocity.xyz",
+    "publicAddr": "127.0.0.1:23600",
+    "maxPlayers": 50,
+    "external": {
+        "port": 23600
+    },
+    "internal": {
+        "host": "127.0.0.1",
+        "port": 23500
+    },
+    "redis": {
+        "host": "127.0.0.1",
+        "port": 6380,
+        "password": ""
+    },
+    "postgres": "postgres://viper:viper@127.0.0.1:5434/viper",
+
+    "statsWatcher": {
+        "enabled": false,
+        "gameDbUrl": "postgres://viper:viper@127.0.0.1:5434/viper",
+        "pollIntervalMs": 5000
+    },
+
+    "trophy": {
+        "enabled": false,
+        "url": "https://your-trophy-server.com/api/kocity",
+        "secret": "",
+        "gameSlug": "knockout-city"
+    },
+
+    "metarena": {
+        "enabled": false,
+        "url": "https://your-metarena-server.com/api/kocity",
+        "secret": "",
+        "serverId": "your-server-id"
+    }
+}

@@ -7,6 +7,9 @@ import { PrismaClient } from '@prisma/client'
 
 import Logger from './logger.js'
 
+import { StatsWatcher } from './stats-watcher';
+import { TrophyWebhook } from './webhooks-trophy';
+import { MetArenaWebhook } from './webhooks-metarena';
 import { authError, authResponse, authErrorData } from './interfaces'
 
 const log = new Logger();
@@ -44,6 +47,17 @@ prisma.$connect().then(() => {
     log.fatal(err.stack ? err.stack.toString() : '');
     process.exit(1);
 });
+// Initialize webhooks (if enabled in config)
+const trophyWebhook = config.trophy.enabled ? new TrophyWebhook(config.trophy) : null;
+const metarenaWebhook = config.metarena.enabled ? new MetArenaWebhook(config.metarena) : null;
+
+// Initialize and start Stats Watcher (if enabled in config)
+const statsWatcher = new StatsWatcher(config.statsWatcher, trophyWebhook, metarenaWebhook);
+setTimeout(() => {
+    statsWatcher.start().catch(err => {
+        log.err(`Failed to start stats watcher: ${err.message}`);
+    });
+}, 2000);
 
 const app = express();
 
