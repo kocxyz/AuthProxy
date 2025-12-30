@@ -12,7 +12,28 @@
     },
     "redis": {
         "host": "127.0.0.1",
-        "port": 6380
+        "port": 6379
     },
-    "postgres": "postgres://viper:@127.0.0.1:5434/viper"
+    "postgres": "postgres://user:password@127.0.0.1:5432/database",
+    
+    "statsWatcher": {
+        "enabled": true,
+        "gameDbUrl": "postgres://viper:viper@127.0.0.1:5434/viper",
+        "pollIntervalMs": 5000
+    },
+    
+    "trophy": {
+        "enabled": false,
+        "url": "https://your-trophy-backend.vercel.app/api/kocity",
+        "secret": "",
+        "gameSlug": "knockout-city"
+    },
+    
+    "metarena": {
+        "enabled": false,
+        "url": "https://your-metarena-api.vercel.app/api/kocity",
+        "secret": "",
+        "serverId": "your-server-id",
+        "serverName": "Your Server Name"
+    }
 }

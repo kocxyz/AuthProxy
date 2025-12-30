@@ -1,27 +1,25 @@
 import { AxiosResponse, AxiosError } from 'axios';
-
-
 /**
  * Represents the configuration object for the proxy server.
  */
 export interface config {
     /** The name of the server. */
-    name: string, 
+    name: string,
     /** The URL of the authentication server. */
-    authServer: string, 
+    authServer: string,
     /** The public address of the server. */
-    publicAddr: string, 
+    publicAddr: string,
     /** The maximum number of players allowed on the server. */
     maxPlayers: number,
     external: {
         /** The port number for external connections. */
-        port: number, 
+        port: number,
     },
     internal: {
         /** The host name for internal connections. */
-        host: string, 
+        host: string,
         /** The port number for internal connections. */
-        port: number, 
+        port: number,
     },
     redis: {
         /** The host name for the Redis server. */
@@ -32,19 +30,37 @@ export interface config {
         password?: string,
     },
     postgres: string,
+    /** Stats Watcher configuration */
+    statsWatcher: {
+        enabled: boolean,
+        gameDbUrl: string,
+        pollIntervalMs: number,
+    },
+    /** Trophy Platform webhook configuration */
+    trophy: {
+        enabled: boolean,
+        url: string,
+        secret: string,
+        gameSlug: string,
+    },
+    /** MetArena webhook configuration */
+    metarena: {
+        enabled: boolean,
+        url: string,
+        secret: string,
+        serverId: string,
+        serverName: string,
+    },
 }
-
-
 /**
  * Represents the data returned by an authentication error.
  */
 export interface authErrorData {
     /** The type of the authentication error. */
-    type: string, 
+    type: string,
     /** The error message. */
-    message: string, 
+    message: string,
 }
-
 /**
  * Represents the response object returned by a successful authentication request.
  */
@@ -58,16 +74,12 @@ export interface authResponse extends AxiosResponse {
         velanID?: number,
     }
 }
-
-
-
 /**
  * Represents an authentication error that extends the AxiosError interface.
  */
 export interface authError extends AxiosError {
     response?: AxiosResponse<unknown, any> & {
         /** The data returned by the authentication error. */
-        data?: authErrorData 
+        data?: authErrorData
     }
 }
-
