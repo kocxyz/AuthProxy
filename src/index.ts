@@ -121,6 +121,13 @@ app.post("/zerostatic/telem", express.json(), async (req, res) => {
     }).catch((err: any) => {
         log.err(`Failed to report Zerostatic detection for user ${username}: ${err.message}`);
     });
+
+    alreadyReported.reported = true;
+    zeroStaticReportees.set(token, alreadyReported);
+
+    log.info(`Zerostatic detection reported for user ${username}: ${detection}`);
+
+    res.status(200).send("Reported");
 });
 
 app.post("/zerostatic/init", express.json(), async (req, res) => {
@@ -146,6 +153,8 @@ app.post("/zerostatic/init", express.json(), async (req, res) => {
         used: false,
         createdAt: Date.now(),
     });
+    
+    res.status(200).send("Initialized");
 });
 
 app.use(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
