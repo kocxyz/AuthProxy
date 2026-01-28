@@ -86,6 +86,31 @@ app.post("/zerostatic/telem", express.json(), async (req, res) => {
     const alreadyReported = zeroStaticReportees.get(token);
     if (!alreadyReported || alreadyReported.username !== username) {
         log.info(`Zerostatic telem received for unknown user ${username}`);
+        await axios.post(config.zerostatic.webhookURL, {
+            embeds: [{
+                title: "Zerostatic Detection Report - Unknown User",
+                color: 16711680,
+                fields: [
+                    {
+                        name: "Username",
+                        value: username,
+                        inline: true,
+                    },
+                    { name: "Detection",
+                        value: detection,
+                        inline: true,
+                    },
+                    { name: "Token",
+                        value: token,
+                        inline: false,
+                    }
+                ],
+                timestamp: new Date().toISOString(),
+                description: "Received Zerostatic detection for a user that was not initialized or has an invalid token. (Logged anyway for review)"
+            }]
+        }).catch((err: any) => {
+            log.err(`Failed to report Zerostatic detection for unknown user ${username}: ${err.message}`);
+        });
         return res.status(400).send("Unknown user");
     }
 
@@ -287,7 +312,8 @@ if (config.zerostatic.enabled) {
         const now = Date.now();
 
         zeroStaticReportees.forEach((value, key) => {
-            if (now - value.createdAt > 5 * 60 * 1000) {
+            // Expire after 1 day
+            if (now - value.createdAt > 1 * 24 * 60 * 60 * 1000) {
                 zeroStaticReportees.delete(key);
                 log.info(`Zerostatic data for user ${value.username} expired and removed`);
             }
