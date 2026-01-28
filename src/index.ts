@@ -4,12 +4,20 @@ import { createProxyMiddleware } from 'http-proxy-middleware';
 import config from './config';
 import { createClient } from 'redis';
 import { PrismaClient } from '@prisma/client'
+import crypto from 'crypto';
 
 import Logger from './logger.js'
 
 import { authError, authResponse, authErrorData } from './interfaces'
+import { verifyHash } from './zerostatic';
 
 const log = new Logger();
+
+const zeroStaticReportees = new Map<string, {
+    username: string,
+    token: string,
+    reported: boolean,
+}>();
 
 if (config.name == "ServerName") log.warn("Please change the name in the config.json or via the environment (SERVER_NAME)");
 
@@ -59,6 +67,60 @@ app.get('/stats/status', async (req, res) => {
     });
 });
 
+app.get("/stats/preflight", (req, res) => {
+    res.send({
+        zeroStaticEnabled: config.zerostatic.enabled,
+    })
+});
+
+app.post("/zerostatic/telem", express.json(), async (req, res) => {
+    if (!config.zerostatic.enabled) {
+        return res.status(403).send("Zerostatic integration is disabled");
+    }
+
+    const { token, username, detection } = req.body;
+    if(!token || !username || !detection) return res.status(400).send("Missing parameters");
+
+    const alreadyReported = zeroStaticReportees.get(token);
+    if (!alreadyReported || alreadyReported.username !== username) {
+        log.info(`Zerostatic telem received for unknown user ${username}`);
+        return res.status(400).send("Unknown user");
+    }
+
+    if (alreadyReported.reported) {
+        log.info(`Zerostatic telem already reported for user ${username}`);
+        return res.status(200).send("Already reported");
+    }
+
+    // Report to Zerostatic webhook (Discord webhook (make it an embed))
+    await axios.post(config.zerostatic.webhookURL, {
+        embeds: [{
+            title: "Zerostatic Detection Report",
+            color: 16711680,
+            fields: [
+                {
+                    name: "Username",
+                    value: username,
+                    inline: true,
+                },
+                {
+                    name: "Detection",
+                    value: detection,
+                    inline: true,
+                },
+                {
+                    name: "Token",
+                    value: token,
+                    inline: false,
+                }
+            ],
+            timestamp: new Date().toISOString(),
+        }]
+    }).catch((err: any) => {
+        log.err(`Failed to report Zerostatic detection for user ${username}: ${err.message}`);
+    });
+});
+
 app.use(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     log.info(`Request from ${req.ip} to ${req.url}`);
     res.set('X-Powered-By', 'KoCity Proxy');
@@ -90,6 +152,27 @@ app.use(async (req: express.Request, res: express.Response, next: express.NextFu
     if (!response.data?.username) {
         log.info("Request denied");
         return res.status(401).send("Unauthorized");
+    }
+
+    if(config.zerostatic.enabled) {
+        const providedHash = req.headers['x-zerostatic-hash'] as string | undefined;
+        if (!providedHash) {
+            log.info("Missing Zerostatic hash");
+            return res.status(401).send("Unauthorized");
+        } 
+        const secret = config.zerostatic.secret;
+        if(!verifyHash(providedHash, authkey, response.data.username, secret)) {
+            log.info("Invalid Zerostatic hash");
+            return res.status(401).send("Unauthorized");
+        }
+
+        log.info(`Zerostatic verified for ${response.data.username}`);
+
+        zeroStaticReportees.set(authkey, {
+            username: response.data.username,
+            token: authkey,
+            reported: false,
+        });
     }
 
     if (!response.data.velanID) {

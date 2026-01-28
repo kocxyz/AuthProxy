@@ -36,5 +36,10 @@ export default {
     port: process.env.REDIS_PORT || config.redis.port,
     password: process.env.REDIS_PASSWORD || config.redis.password || undefined,
   },
-  postgres: process.env.DATABASE_URL || config.postgres
+  postgres: process.env.DATABASE_URL || config.postgres,
+  zerostatic: {
+    enabled: process.env.ZEROSTATIC_ENABLED ? process.env.ZEROSTATIC_ENABLED == "true" : config.zerostatic.enabled,
+    webhookURL: process.env.ZEROSTATIC_WEBHOOK_URL || config.zerostatic.webhookURL,
+    secret: process.env.ZEROSTATIC_SECRET || config.zerostatic.secret || "",
+  }
 } satisfies config

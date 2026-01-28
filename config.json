@@ -4,15 +4,20 @@
     "publicAddr": "127.0.0.1:23600",
     "maxPlayers": 50,
     "external": {
-        "port": 23600
+        "port": 23500
     },
     "internal": {
         "host": "127.0.0.1",
-        "port": 23500
+        "port": 23600
     },
     "redis": {
         "host": "127.0.0.1",
         "port": 6380
     },
-    "postgres": "postgres://viper:@127.0.0.1:5434/viper"
+    "postgres": "postgres://viper:@127.0.0.1:5434/viper",
+    "zerostatic": {
+        "enabled": false,
+        "webhookURL": "",
+        "secret": ""
+    }
 }

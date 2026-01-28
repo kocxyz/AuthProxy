@@ -13,8 +13,8 @@
     "server"
   ],
   "author": {
-    "name": "Ipmake",
-    "email": "info@ipgg.net"
+    "name": "Ipmake.dev",
+    "email": "contact@ipmake.dev"
   },
   "license": "ISC",
   "dependencies": {
@@ -25,7 +25,8 @@
     "http-proxy": "^1.18.1",
     "http-proxy-middleware": "^2.0.6",
     "prisma": "^5.4.1",
-    "redis": "^4.6.7"
+    "redis": "^4.6.7",
+    "socket.io": "^4.8.3"
   },
   "devDependencies": {
     "@types/express": "^4.17.17",

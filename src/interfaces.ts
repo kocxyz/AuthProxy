@@ -32,6 +32,14 @@ export interface config {
         password?: string,
     },
     postgres: string,
+    zerostatic: {
+        /** Whether Zerostatic integration is enabled. */
+        enabled: boolean,
+        /** The webhook URL for Zerostatic notifications. */
+        webhookURL: string,
+        /** The secret key for verifying Zerostatic requests. */
+        secret: string,
+    }
 }
 
 
