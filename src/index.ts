@@ -155,19 +155,6 @@ app.use(async (req: express.Request, res: express.Response, next: express.NextFu
     }
 
     if(config.zerostatic.enabled) {
-        const providedHash = req.headers['x-zerostatic-hash'] as string | undefined;
-        if (!providedHash) {
-            log.info("Missing Zerostatic hash");
-            return res.status(401).send("Unauthorized");
-        } 
-        const secret = config.zerostatic.secret;
-        if(!verifyHash(providedHash, authkey, response.data.username, secret)) {
-            log.info("Invalid Zerostatic hash");
-            return res.status(401).send("Unauthorized");
-        }
-
-        log.info(`Zerostatic verified for ${response.data.username}`);
-
         zeroStaticReportees.set(authkey, {
             username: response.data.username,
             token: authkey,
