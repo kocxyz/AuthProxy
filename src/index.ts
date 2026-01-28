@@ -17,6 +17,8 @@ const zeroStaticReportees = new Map<string, {
     username: string,
     token: string,
     reported: boolean,
+    used: boolean,
+    createdAt: number,
 }>();
 
 if (config.name == "ServerName") log.warn("Please change the name in the config.json or via the environment (SERVER_NAME)");
@@ -79,7 +81,7 @@ app.post("/zerostatic/telem", express.json(), async (req, res) => {
     }
 
     const { token, username, detection } = req.body;
-    if(!token || !username || !detection) return res.status(400).send("Missing parameters");
+    if (!token || !username || !detection) return res.status(400).send("Missing parameters");
 
     const alreadyReported = zeroStaticReportees.get(token);
     if (!alreadyReported || alreadyReported.username !== username) {
@@ -121,6 +123,31 @@ app.post("/zerostatic/telem", express.json(), async (req, res) => {
     });
 });
 
+app.post("/zerostatic/init", express.json(), async (req, res) => {
+    if (!config.zerostatic.enabled) {
+        return res.status(403).send("Zerostatic integration is disabled");
+    }
+
+    const { username, authkey, hash } = req.body;
+    if (!username || !authkey || !hash) return res.status(400).send("Missing parameters");
+
+    const valid = verifyHash(hash, authkey, username, config.zerostatic.secret);
+    if (!valid) {
+        log.info(`Invalid Zerostatic hash for user ${username}`);
+        return res.status(401).send("Invalid hash");
+    }
+
+    log.info(`Zerostatic init received for user ${username}`);
+
+    zeroStaticReportees.set(authkey, {
+        username,
+        token: authkey,
+        reported: false,
+        used: false,
+        createdAt: Date.now(),
+    });
+});
+
 app.use(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     log.info(`Request from ${req.ip} to ${req.url}`);
     res.set('X-Powered-By', 'KoCity Proxy');
@@ -154,12 +181,20 @@ app.use(async (req: express.Request, res: express.Response, next: express.NextFu
         return res.status(401).send("Unauthorized");
     }
 
-    if(config.zerostatic.enabled) {
-        zeroStaticReportees.set(authkey, {
-            username: response.data.username,
-            token: authkey,
-            reported: false,
-        });
+    if (config.zerostatic.enabled) {
+        const zeroStaticData = zeroStaticReportees.get(authkey);
+        if (!zeroStaticData) {
+            log.info(`Zerostatic data not found for user ${response.data.username}`);
+            return res.status(401).send("Unauthorized");
+        }
+
+        if (zeroStaticData.used) {
+            log.info(`Zerostatic data already used for user ${response.data.username}`);
+            return res.status(401).send("Unauthorized");
+        }
+
+        zeroStaticData.used = true;
+        zeroStaticReportees.set(authkey, zeroStaticData);
     }
 
     if (!response.data.velanID) {
@@ -236,6 +271,20 @@ app.all('*', proxy)
 const server = app.listen(config.external.port, () => {
     log.info(`Listening on port ${config.external.port}`);
 });
+
+
+if (config.zerostatic.enabled) {
+    setInterval(() => {
+        const now = Date.now();
+
+        zeroStaticReportees.forEach((value, key) => {
+            if (now - value.createdAt > 5 * 60 * 1000) {
+                zeroStaticReportees.delete(key);
+                log.info(`Zerostatic data for user ${value.username} expired and removed`);
+            }
+        });
+    }, 60 * 1000);
+}
 
 
 process.on('uncaughtException', function (err: Error) {
